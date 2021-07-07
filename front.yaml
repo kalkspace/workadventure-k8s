@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front
+  namespace: workadventure
+  labels:
+    app: front
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: front
+  template:
+    metadata:
+      namespace: workadventure
+      labels:
+        app: front
+    spec:
+      containers:
+        - name: web
+          # THIS HAS CONFIG HARDCODED IN THE IMAGE. Swap with your own image!
+          image: "quay.io/kalkspace/workadventure-front:local-pusher-2"
+          ports:
+            - name: web
+              containerPort: 8080
+              protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front
+  namespace: workadventure
+spec:
+  type: ClusterIP
+  selector:
+    app: front
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+# Redirect to https
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: https-redirect
+  namespace: workadventure
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: front-http-redir
+  namespace: workadventure
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`kalkadventure.kalk.space`)
+      kind: Rule
+      middlewares:
+        - name: https-redirect
+          namespace: workadventure
+      services:
+        - name: front
+          port: 80
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: secure-headers
+  namespace: workadventure
+spec:
+  headers:
+    stsSeconds: 31536000
+    stsPreload: true
+    browserXssFilter: true
+    customResponseHeaders:
+      Server: KalkSpace
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: front
+  namespace: workadventure
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`kalkadventure.kalk.space`)
+      kind: Rule
+      middlewares:
+        - name: secure-headers
+          namespace: workadventure
+      services:
+        - name: front
+          port: 80
+  tls:
+    secretName: all-tls

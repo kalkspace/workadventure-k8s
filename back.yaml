@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: back
+  namespace: workadventure
+  labels:
+    app: back
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: back
+  template:
+    metadata:
+      namespace: workadventure
+      labels:
+        app: back
+    spec:
+      containers:
+        - name: web
+          image: "ffddorf/workadventure-back"
+          env:
+            - name: DEBUG
+              value: "*"
+          ports:
+            - name: web
+              containerPort: 80
+              protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: back
+  namespace: workadventure
+spec:
+  type: NodePort
+  selector:
+    app: back
+  ports:
+      # By default and for convenience, the `targetPort` is set to the same value as the `port` field.
+    - port: 50051
+      targetPort: 50051
+      # Optional field
+      # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
+      nodePort: 30010

@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pusher
+  namespace: workadventure
+  labels:
+    app: pusher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pusher
+  template:
+    metadata:
+      namespace: workadventure
+      labels:
+        app: pusher
+    spec:
+      containers:
+        - name: web
+          image: "ffddorf/workadventure-pusher"
+          env:
+            - name: API_URL
+              value: "back:50051"
+            - name: DEBUG
+              value: "*"
+          ports:
+            - name: web
+              containerPort: 8080
+              protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pusher
+  namespace: workadventure
+spec:
+  type: ClusterIP
+  selector:
+    app: pusher
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: pusher-stripprefix
+  namespace: workadventure
+spec:
+  stripPrefix:
+    prefixes:
+      - /pusher
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pusher
+  namespace: workadventure
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`kalkadventure.kalk.space`) && PathPrefix(`/pusher`)
+      kind: Rule
+      middlewares:
+        - name: pusher-stripprefix
+          namespace: workadventure
+      services:
+        - name: pusher
+          port: 80
+  tls:
+    secretName: all-tls
