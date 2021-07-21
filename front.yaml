@@ -2,24 +2,27 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: front
-  namespace: workadventure
+  namespace: dorfadventure
+
   labels:
     app: front
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: front
   template:
     metadata:
-      namespace: workadventure
+      namespace: dorfadventure
+
       labels:
         app: front
     spec:
       containers:
         - name: web
           # THIS HAS CONFIG HARDCODED IN THE IMAGE. Swap with your own image!
-          image: "quay.io/kalkspace/workadventure-front:local-pusher-2"
+          image: "quay.io/ffddorf/workadventure-front:dev"
+          imagePullPolicy: Always
           ports:
             - name: web
               containerPort: 8080
@@ -30,7 +33,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: front
-  namespace: workadventure
+  namespace: dorfadventure
+
 spec:
   type: ClusterIP
   selector:
@@ -45,7 +49,8 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: https-redirect
-  namespace: workadventure
+  namespace: dorfadventure
+
 spec:
   redirectScheme:
     scheme: https
@@ -56,16 +61,18 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: front-http-redir
-  namespace: workadventure
+  namespace: dorfadventure
+
 spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`kalkadventure.kalk.space`)
+    - match: Host(`dev.dorf.world`)
       kind: Rule
       middlewares:
         - name: https-redirect
-          namespace: workadventure
+          namespace: dorfadventure
+
       services:
         - name: front
           port: 80
@@ -75,30 +82,33 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: secure-headers
-  namespace: workadventure
+  namespace: dorfadventure
+
 spec:
   headers:
     stsSeconds: 31536000
     stsPreload: true
     browserXssFilter: true
     customResponseHeaders:
-      Server: KalkSpace
+      Server: DorfAdventure development
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: front
-  namespace: workadventure
+  namespace: dorfadventure
+
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`kalkadventure.kalk.space`)
+    - match: Host(`dev.dorf.world`)
       kind: Rule
       middlewares:
         - name: secure-headers
-          namespace: workadventure
+          namespace: dorfadventure
+
       services:
         - name: front
           port: 80
