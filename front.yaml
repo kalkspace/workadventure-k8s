@@ -23,6 +23,9 @@ spec:
           # THIS HAS CONFIG HARDCODED IN THE IMAGE. Swap with your own image!
           image: "quay.io/ffddorf/workadventure-front:dev"
           imagePullPolicy: Always
+          env:
+            - name: JITSI_URL
+              value: jitsi.dev.dorf.world
           ports:
             - name: web
               containerPort: 8080

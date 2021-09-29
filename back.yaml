@@ -24,6 +24,8 @@ spec:
           env:
             - name: DEBUG
               value: "*"
+            - name: JITSI_URL
+              value: jitsi.dev.dorf.world
           ports:
             - name: web
               containerPort: 80
